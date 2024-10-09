@@ -4,6 +4,12 @@ const router = Router()
 
 router.post('/payments',PaymentController.createPayment)
 
-router.get('/payments/:paymentId',PaymentController.getPaymentById)
+router.get('/payments/success', PaymentController.getPaymentById);
+
+
+router.post('/payments/Paypal',PaymentController.createPaymentPaypal)
+
+//router.get('/paymentPaypal/success',PaymentController.getPaymentByIdPaypal)
+
 
 export default router
