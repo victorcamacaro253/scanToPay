@@ -1,12 +1,14 @@
 // controllers/PaymentController.js
 import StripeService from '../services/stripeService.js';
 import pagosModel from '../models/pagosModel.js';
-import query from '../config/db.js'; // si estás usando un archivo db.js para queries
 import generateQrCode from '../services/qrCodeGenerator.js';
+import PaypalService from '../services/paypalService.js';
 
 class PaymentController {
     static async createPayment(req, res) {
         const { items, user_id } = req.body;
+
+        console.log(user_id)
 
         try {
             // Crear sesión de Stripe
@@ -14,22 +16,31 @@ class PaymentController {
 
        const checkoutUrl = session.url;
 
+       const sessionId= session.id;
+       console.log(sessionId)
+
             // Generar código QR
   
     const qrCode = await generateQrCode(checkoutUrl);
 
-           //  Guardar pago en la base de datos
-        /*   const result = await pagosModel.addPago(user_id,session.id,);
-         const idPago = result.insertId;
+            // Obtener el estado de la compra desde la sesión de Stripe
+            const paymentStatus = session.payment_status; // Puedes revisar otros campos como session.status si es necesario
 
+            console.log(paymentStatus)
+
+     // Calcular el monto total de la compra
+     const totalAmount = items.reduce((total, item) => total + item.amount * item.quantity, 0);
+ console.log(totalAmount)
+           //  Guardar pago en la base de datos
+          const result = await pagosModel.addPago(user_id,sessionId,qrCode,totalAmount,paymentStatus);
+         const idPago = result.insertId;
+console.log(idPago)
             // Insertar los productos comprados en la base de datos
             for (const item of items) {
                 const { product_id, amount, quantity } = item;
-                await query(
-                    `INSERT INTO productos_compras (id_compra, id_producto, cantidad, precio) VALUES (?, ?, ?, ?)`,
-                    [idCompra, product_id, quantity, amount]
-                );
-            }*/
+                await pagosModel.detalles_pagos(idPago, product_id, quantity, amount)
+            
+            }
 
             // Devolver la URL de Stripe al cliente
             return res.json({ url: session.url,id:session.id,qrCode });
@@ -43,19 +54,71 @@ class PaymentController {
   
     // Endpoint para obtener un pago por ID
     static async getPaymentById(req, res) {
-        const { paymentId } = req.params;
-
+        const { sessionId } = req.query;
+   console.log(sessionId)
         try {
-            const payment = await PaymentModel.getPaymentById(paymentId);
+            const payment = await pagosModel.getPaymentById(sessionId);
             if (!payment) {
                 return res.status(404).json({ message: 'Pago no encontrado' });
             }
+            
+            const updateStatus= await  pagosModel.updateStatusPayment(sessionId)
+
+
             res.status(200).json(payment);
         } catch (error) {
             res.status(500).json({ success: false, message: 'Error al obtener el pago' });
+            console.error(error)
         }
     }
+
+
+
+    static async createPaymentPaypal(req,res){
+        try{
+        const { items, user_id } = req.body;
+
+        const order = await PaypalService.createOrder(items)
+      
+        const paymentId= order.id
+        const status= order.status
+        console.log(paymentId)
+        console.log(user_id)
+        console.log(status)
+        const returnUrl = `http://localhost:5000/paypal/capturePaymentPaypal?orderId=${order.id}`;
+        const approvalUrl = order.links.find(link => link.rel === 'approve').href;
+        
+
+        const totalAmount = items.reduce((total, item) => total + (item.amount * item.quantity)/100, 0);
+        console.log(totalAmount)
+
+            // Generar código QR
+  
+    const qrCode = await generateQrCode(approvalUrl);
+
+    const result = await pagosModel.addPagoPaypal(user_id,paymentId,qrCode,totalAmount,status);
+    const idPago = result.insertId;
+    console.log(idPago)
+
+    for (const item of items) {
+        const { product_id, amount, quantity } = item;
+        await pagosModel.detalles_pagos(idPago, product_id, quantity, amount)
+    
+    }
+
+
+
+         // Enviar la respuesta con el ID del pedido y la URL de aprobación
+         res.status(200).json({ id: order.id, approvalUrl, returnUrl,qrCode });
+         } catch(error){  
+            console.error(error); // Log para depurar
+            res.status(400).json({ error: error.message });
+
+       }
+
+    }
 }
+
 
 
 
