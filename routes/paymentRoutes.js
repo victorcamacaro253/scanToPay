@@ -9,7 +9,7 @@ router.get('/payments/success', PaymentController.getPaymentById);
 
 router.post('/payments/Paypal',PaymentController.createPaymentPaypal)
 
-//router.get('/paymentPaypal/success',PaymentController.getPaymentByIdPaypal)
+router.get('/paypal/capturePaymentPaypal',PaymentController.capturePaymentPaypal)
 
 
 export default router
