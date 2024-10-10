@@ -117,6 +117,38 @@ console.log(idPago)
        }
 
     }
+
+    static async capturePaymentPaypal(req,res){
+
+        try{
+        const { token } =req.query;
+
+        console.log(token)
+
+        const capture= await PaypalService.capturePaymentPaypal(token)
+
+        console.log(capture.status)
+
+          // Revisar el estado de la captura
+        if (capture.status === 'COMPLETED') {
+            res.status(200).json({
+                status: 'success',
+                message: 'Payment captured successfully',
+                details: capture // Detalles del pago capturado
+            });
+        } else {
+            res.status(400).json({
+                status: 'error',
+                message: 'Payment capture failed',
+                details: capture // Detalles del error
+            });
+        }
+
+    }catch(error){
+            console.error('Error al capturar el pago:', error);
+            res.status(500).json({ success: false, message: 'Error al capturar el pago' });
+        }
+    }
 }
 
 
