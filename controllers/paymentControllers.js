@@ -3,6 +3,7 @@ import StripeService from '../services/stripeService.js';
 import pagosModel from '../models/pagosModel.js';
 import generateQrCode from '../services/qrCodeGenerator.js';
 import PaypalService from '../services/paypalService.js';
+import SquareService from '../services/squareService.js';
 
 class PaymentController {
     static async createPayment(req, res) {
@@ -85,7 +86,7 @@ console.log(idPago)
         console.log(paymentId)
         console.log(user_id)
         console.log(status)
-        const returnUrl = `http://localhost:5000/paypal/capturePaymentPaypal?orderId=${order.id}`;
+       // const returnUrl = `http://localhost:5000/paypal/capturePaymentPaypal?orderId=${order.id}`;
         const approvalUrl = order.links.find(link => link.rel === 'approve').href;
         
 
@@ -109,7 +110,7 @@ console.log(idPago)
 
 
          // Enviar la respuesta con el ID del pedido y la URL de aprobación
-         res.status(200).json({ id: order.id, approvalUrl, returnUrl,qrCode });
+         res.status(200).json({ id: order.id, approvalUrl,qrCode });
          } catch(error){  
             console.error(error); // Log para depurar
             res.status(400).json({ error: error.message });
@@ -127,7 +128,7 @@ console.log(idPago)
 
         const capture= await PaypalService.capturePaymentPaypal(token)
 
-        console.log(capture.status)
+        console.log(capture)
 
           // Revisar el estado de la captura
         if (capture.status === 'COMPLETED') {
@@ -149,6 +150,8 @@ console.log(idPago)
             res.status(500).json({ success: false, message: 'Error al capturar el pago' });
         }
     }
+
+
 }
 
 
