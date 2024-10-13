@@ -12,4 +12,6 @@ router.post('/payments/Paypal',PaymentController.createPaymentPaypal)
 router.get('/paypal/capturePaymentPaypal',PaymentController.capturePaymentPaypal)
 
 
+
+
 export default router
