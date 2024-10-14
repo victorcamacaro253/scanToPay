@@ -55,18 +55,20 @@ console.log(idPago)
   
     // Endpoint para obtener un pago por ID
     static async getPaymentById(req, res) {
-        const { sessionId } = req.query;
-   console.log(sessionId)
+
         try {
+            const { sessionId } = req.query;
+            console.log(sessionId)
+
             const payment = await pagosModel.getPaymentById(sessionId);
             if (!payment) {
                 return res.status(404).json({ message: 'Pago no encontrado' });
             }
             
             const updateStatus= await  pagosModel.updateStatusPayment(sessionId)
-
-
-            res.status(200).json(payment);
+           const paymentRetrieve= await StripeService.getPaymentDetails(sessionId)
+console.log(paymentRetrieve)
+            res.status(200).json(paymentRetrieve);
         } catch (error) {
             res.status(500).json({ success: false, message: 'Error al obtener el pago' });
             console.error(error)
